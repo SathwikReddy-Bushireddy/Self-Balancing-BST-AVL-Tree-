@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVL Tree Visualizer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding-top: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #controls {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #insertValue {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #visualizationContainer {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+        }
+
+        #avlCanvas {
+            /* Set a fixed size for the drawing area */
+            display: block;
+            background-color: #fdfdfd;
+        }
+
+        #status {
+            padding: 10px 20px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            color: #333;
+            min-height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>AVL Tree Visualizer</h1>
+
+    <div id="controls">
+        <input type="number" id="insertValue" placeholder="Enter value to insert" required>
+        <button onclick="handleInsert()">Insert Node</button>
+        <button onclick="resetTree()">Reset Tree</button>
+    </div>
+
+    <div id="visualizationContainer">
+        <canvas id="avlCanvas"></canvas>
+    </div>
+
+    <div id="status">
+        <p>Status: Ready</p>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const CANVAS_WIDTH = 800;
+        const CANVAS_HEIGHT = 500;
+        const NODE_RADIUS = 20;
+        const LEVEL_HEIGHT = 60;
+
+        // --- DOM Elements ---
+        const canvas = document.getElementById('avlCanvas');
+        const ctx = canvas.getContext('2d');
+        const statusDiv = document.querySelector('#status p');
+
+        // Set canvas dimensions
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+
+        // --- AVL Tree Node Class (Translated from your Java AVLNode) ---
+        class AVLNode {
+            constructor(value) {
+                this.value = value; // Corresponds to 'data'
+                this.left = null;
+                this.right = null;
+                this.height = 1; // Corresponds to 'h'
+                // Visualization coordinates
+                this.visX = 0;
+                this.visY = 0;
+            }
+        }
+
+        // --- Global Tree State ---
+        let root = null;
+        let insertedValue = null; // To highlight the last inserted node
+
+        // =========================================================================
+        // --- TRANSLATED AVL LOGIC FROM JAVA ---
+        // =========================================================================
+
+        function getHeight(node) {
+            if (node === null) return 0;
+            return node.height; 
+        }
+
+        function updateHeight(node) {
+            if (node === null) return;
+            node.height = 1 + Math.max(getHeight(node.left), getHeight(node.right));
+        }
+
+        function getBalance(node) {
+            if (node === null) return 0;
+            return getHeight(node.left) - getHeight(node.right);
+        }
+
+        function rotateRight(y) {
+            statusDiv.textContent = `Status: Performing Right Rotation on node ${y.value}`;
+            const x = y.left;
+            const T2 = x.right;
+
+            // 1. Perform rotation
+            x.right = y;
+            y.left = T2;
+
+            // 2. Update heights (bottom-up: y then x)
+            updateHeight(y);
+            updateHeight(x);
+
+            return x; // New root
+        }
+
+        function rotateLeft(x) {
+            statusDiv.textContent = `Status: Performing Left Rotation on node ${x.value}`;
+            const y = x.right;
+            const T2 = y.left; 
+
+            // 1. Perform rotation
+            y.left = x; 
+            x.right = T2; 
+
+            // 2. Update heights (bottom-up: x then y)
+            updateHeight(x);
+            updateHeight(y);
+
+            return y; // New root
+        }
+
+        function insertNode(node, value) {
+            // 1. Standard BST Insertion (Base case)
+            if (node === null) {
+                return new AVLNode(value);
+            }
+            
+            if (value === node.value) {
+                return node;
+            }
+
+            if (value < node.value) {
+                node.left = insertNode(node.left, value);
+            } else {
+                node.right = insertNode(node.right, value);
+            }
+
+            // 2. Update height of current node
+            updateHeight(node);
+
+            // 3. Get the balance factor
+            const balance = getBalance(node);
+
+            // 4. Perform rotations if unbalanced
+
+            // Left Heavy Cases (balance > 1, i.e., +2)
+            if (balance > 1) { 
+                if (getBalance(node.left) >= 0) { // LL Case: BF of left child is +1 or 0
+                    statusDiv.textContent = `Status: Unbalanced at ${node.value}. Applying LL (Right) Rotation.`;
+                    return rotateRight(node);
+                } else { // LR Case: BF of left child is -1
+                    statusDiv.textContent = `Status: Unbalanced at ${node.value}. Applying LR (Left-Right) Rotations.`;
+                    node.left = rotateLeft(node.left);
+                    return rotateRight(node);
+                }
+            }
+
+            // Right Heavy Cases (balance < -1, i.e., -2)
+            if (balance < -1) { 
+                if (getBalance(node.right) <= 0) { // RR Case: BF of right child is -1 or 0
+                    statusDiv.textContent = `Status: Unbalanced at ${node.value}. Applying RR (Left) Rotation.`;
+                    return rotateLeft(node); 
+                } else { // RL Case: BF of right child is +1
+                    statusDiv.textContent = `Status: Unbalanced at ${node.value}. Applying RL (Right-Left) Rotations.`;
+                    node.right = rotateRight(node.right);
+                    return rotateLeft(node);
+                }
+            }
+
+            // 5. Return the (potentially new) root of the subtree
+            return node;
+        }
+
+        // =========================================================================
+        // --- Drawing / Visualization Logic ---
+        // =========================================================================
+
+        function layoutTree(node, x, y, offset) {
+            if (node === null) return;
+
+            node.visX = x;
+            node.visY = y;
+
+            const newY = y + LEVEL_HEIGHT;
+            const leftX = x - offset / 2;
+            const rightX = x + offset / 2;
+            const newOffset = offset * 0.5;
+
+            layoutTree(node.left, leftX, newY, newOffset);
+            layoutTree(node.right, rightX, newY, newOffset);
+        }
+
+        function drawLines(node) {
+            if (node === null) return;
+
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+
+            // Draw line to left child
+            if (node.left) {
+                ctx.beginPath();
+                ctx.moveTo(node.visX, node.visY + NODE_RADIUS);
+                ctx.lineTo(node.left.visX, node.left.visY - NODE_RADIUS);
+                ctx.stroke();
+            }
+
+            // Draw line to right child
+            if (node.right) {
+                ctx.beginPath();
+                ctx.moveTo(node.visX, node.visY + NODE_RADIUS);
+                ctx.lineTo(node.right.visX, node.right.visY - NODE_RADIUS);
+                ctx.stroke();
+            }
+
+            drawLines(node.left);
+            drawLines(node.right);
+        }
+
+        function drawNodes(node) {
+            if (node === null) return;
+
+            let fillColor = '#007bff'; // Default blue
+            let textColor = 'white';
+            const balanceFactor = getBalance(node);
+
+            if (node.value === insertedValue) {
+                fillColor = '#ffc107'; // Highlight yellow
+                textColor = '#333';
+            } else if (Math.abs(balanceFactor) > 1) {
+                fillColor = '#dc3545'; // Unbalanced red
+            } else if (Math.abs(balanceFactor) === 1) {
+                fillColor = '#28a745'; // Slightly unbalanced green
+            }
+
+            // Draw node circle
+            ctx.beginPath();
+            ctx.arc(node.visX, node.visY, NODE_RADIUS, 0, 2 * Math.PI);
+            ctx.fillStyle = fillColor;
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw value text
+            ctx.fillStyle = textColor;
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(node.value, node.visX, node.visY);
+
+            // Draw height and balance factor
+            ctx.fillStyle = '#333';
+            ctx.font = '10px Arial';
+            ctx.fillText(`H:${node.height}`, node.visX, node.visY + NODE_RADIUS + 10);
+            ctx.fillText(`B:${balanceFactor}`, node.visX, node.visY - NODE_RADIUS - 10);
+
+
+            drawNodes(node.left);
+            drawNodes(node.right);
+        }
+
+        function drawTree() {
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+            if (root === null) {
+                statusDiv.textContent = "Status: Tree is empty. Insert a node.";
+                return;
+            }
+
+            // 1. Calculate positions
+            layoutTree(root, CANVAS_WIDTH / 2, 30, CANVAS_WIDTH * 0.45);
+
+            // 2. Draw connections
+            drawLines(root);
+
+            // 3. Draw nodes
+            drawNodes(root);
+        }
+
+        // =========================================================================
+        // --- User Interaction Handlers ---
+        // =========================================================================
+
+        function handleInsert() {
+            const inputElement = document.getElementById('insertValue');
+            const value = parseInt(inputElement.value);
+
+            if (isNaN(value) || value < 1 || value > 999) {
+                alert("Please enter a valid number between 1 and 999.");
+                return;
+            }
+
+            insertedValue = value;
+
+            // Store the current status before insertion/rotation
+            const initialStatus = `Status: Attempting to insert value ${value}...`;
+            statusDiv.textContent = initialStatus;
+            
+            const oldRoot = root;
+            root = insertNode(root, value);
+
+            // If status is still the initial one, it means no rotation happened
+            if (statusDiv.textContent === initialStatus) {
+                 statusDiv.textContent = `Status: Inserted ${value}. Tree remained balanced.`;
+            }
+
+            drawTree();
+            inputElement.value = '';
+        }
+
+        function resetTree() {
+            root = null;
+            insertedValue = null;
+            drawTree();
+            statusDiv.textContent = "Status: Tree has been reset.";
+        }
+
+        // Initial draw when the page loads
+        window.onload = drawTree;
+    </script>
+</body>
+</html>
