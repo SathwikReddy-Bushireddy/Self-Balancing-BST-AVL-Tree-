@@ -1,4 +1,4 @@
-package DSA_Project;
+package DSA_Project.Self-Balancing-BST-AVL-Tree;
 
 import java.util.*;
 import java.io.*;
