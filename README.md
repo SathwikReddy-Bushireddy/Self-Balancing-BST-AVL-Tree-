@@ -97,4 +97,3 @@ Developer: Sathwik Reddy
 
 🎓 Created as part of a Data Structures and Algorithms learning project.
 
-<p align="center"> <img src="https://img.shields.io/badge/Made%20with%20❤️%20and%20JavaScript-purple?style=for-the-badge" /> </p>
