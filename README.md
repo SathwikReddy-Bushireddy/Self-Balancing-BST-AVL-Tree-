@@ -59,10 +59,11 @@ Start inserting numbers and watch the AVL tree balance itself automatically!
 🔹 Option 2: Test AVL Logic in Java
 
 Compile and run the Java file:
-
+ # Compile the Java file
 javac AVL.java
-java AVL
 
+# Run the compiled program
+java AVL
 
 Observe AVL operations in console mode.
 
