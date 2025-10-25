@@ -56,14 +56,16 @@ Open avl_visualizer.html in any browser (Chrome, Edge, Firefox).
 
 Start inserting numbers and watch the AVL tree balance itself automatically!
 
-🔹 Option 2: Test AVL Logic in Java
+### 🔹 Option 2: Test AVL Logic in Java
 
 Compile and run the Java file:
- # Compile the Java file
-javac AVL.java
 
-# Run the compiled program
-java AVL
+  ```bash
+  # Compile the Java file
+  javac AVL.java
+  
+  # Run the compiled program
+  java AVL
 
 Observe AVL operations in console mode.
 
